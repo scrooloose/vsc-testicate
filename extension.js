@@ -52,7 +52,7 @@ function activate(context) {
 		}
 
 		mungeTestPathIntoConfig(testPathAtCursor())
-		term.sendText('./run.py')
+		term.sendText('python3 ./run.py')
 	});
 
 	context.subscriptions.push(disposable)
