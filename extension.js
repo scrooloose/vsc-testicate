@@ -81,7 +81,6 @@ function activate(context) {
     )
   );
 }
-exports.activate = activate;
 
 function deactivate() {}
 
