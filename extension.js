@@ -59,10 +59,7 @@ function activate(context) {
   let allTestsDisposable = vscode.commands.registerCommand(
     "extension.allTestsOnPage",
     function() {
-      function allTestsOnPage() {
-        return moduleNameOfCurrentFile();
-      }
-      mungeTestPathIntoConfig(allTestsOnPage());
+      mungeTestPathIntoConfig(moduleNameOfCurrentFile());
       term.sendText("python3 ./run.py");
     }
   );
