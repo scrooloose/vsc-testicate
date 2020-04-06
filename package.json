@@ -15,7 +15,8 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:extension.testUnderCursor"
+		"onCommand:extension.testUnderCursor",
+		"onCommand:extension.allTestsOnPage"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -23,6 +24,22 @@
 			{
 				"command": "extension.testUnderCursor",
 				"title": "Test Under Cursor"
+			},
+			{
+				"command": "extension.allTestsOnPage",
+				"title": "All Tests on Page"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "extension.testUnderCursor",
+				"key": "shift+ctrl+t",
+				"mac": "shift+cmd+t"
+			},
+			{
+				"command": "extension.allTestsOnPage",
+				"key": "shift+ctrl+a",
+				"mac": "shift+cmd+a"
 			}
 		]
 	},
