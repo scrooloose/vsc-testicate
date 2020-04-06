@@ -1,29 +1,53 @@
 const vscode = require("vscode");
 
-/**
- * @param {vscode.ExtensionContext} context
- */
-function activate(context) {
-  const editor = vscode.window.activeTextEditor;
-  const document = editor.document;
-  const term = vscode.window.activeTerminal;
+class Testicate {
+  runTestUnderCursor() {
+    this.mungeTestPathIntoConfig(this.testPathAtCursor());
+    this.term.sendText("python3 ./run.py");
+  }
 
-  function moduleNameOfCurrentFile() {
-    const fname = document.fileName;
+  runAllTestsInCurrentModule() {
+    this.mungeTestPathIntoConfig(this.moduleNameOfCurrentFile());
+    this.term.sendText("python3 ./run.py");
+  }
+
+  // everything below here should be considered private
+
+  get editor() {
+    return vscode.window.activeTextEditor;
+  }
+
+  get document() {
+    return this.editor.document
+  }
+
+  get term() {
+    return vscode.window.activeTerminal
+  }
+
+  testPathAtCursor() {
+    const moduleName = this.moduleNameOfCurrentFile();
+    const className = this.searchBackward(/^\s*class (\w+)/);
+    const funcName = this.searchBackward(/^\s*def (test_\w+)/);
+    return `${moduleName}.${className}.${funcName}`;
+  }
+
+  moduleNameOfCurrentFile() {
+    const fname = this.document.fileName;
     const relativeFname = fname.replace(vscode.workspace.rootPath + "/", "");
     return relativeFname.replace(/\//g, ".").replace(/\.py$/, "");
   }
 
-  function mungeTestPathIntoConfig(testPath) {
-    term.sendText(
+  mungeTestPathIntoConfig(testPath) {
+    this.term.sendText(
       `sed -i -e "s/^\\( \\+'test_subset': \\)'.*'/\\1'${testPath}'/" configs/test_config.py`
     );
   }
 
-  function searchBackward(regex) {
-    var lineNum = editor.selection.active.line;
+  searchBackward(regex) {
+    var lineNum = this.editor.selection.active.line;
     while (lineNum >= 0) {
-      const curLine = document.lineAt(lineNum).text;
+      const curLine = this.document.lineAt(lineNum).text;
       if (curLine.match(regex)) {
         return curLine.match(regex)[1];
       }
@@ -33,31 +57,29 @@ function activate(context) {
     // FIXME: should probably do something better than this
     throw new Error("Didnt find search regex");
   }
+}
 
-  function testPathAtCursor() {
-    const moduleName = moduleNameOfCurrentFile();
-    const className = searchBackward(/^\s*class (\w+)/);
-    const funcName = searchBackward(/^\s*def (test_\w+)/);
-    return `${moduleName}.${className}.${funcName}`;
-  }
-
-  let disposable = vscode.commands.registerCommand(
-    "extension.testUnderCursor",
-    function() {
-      mungeTestPathIntoConfig(testPathAtCursor());
-      term.sendText("python3 ./run.py");
-    }
+/**
+ * @param {vscode.ExtensionContext} context
+ */
+function activate(context) {
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "extension.testUnderCursor",
+      function() {
+        (new Testicate()).runTestUnderCursor()
+      }
+    )
   );
-  context.subscriptions.push(disposable);
 
-  let allTestsDisposable = vscode.commands.registerCommand(
-    "extension.allTestsOnPage",
-    function() {
-      mungeTestPathIntoConfig(moduleNameOfCurrentFile());
-      term.sendText("python3 ./run.py");
-    }
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "extension.allTestsOnPage",
+      function() {
+        (new Testicate()).runAllTestsInCurrentModule()
+      }
+    )
   );
-  context.subscriptions.push(allTestsDisposable);
 }
 exports.activate = activate;
 
