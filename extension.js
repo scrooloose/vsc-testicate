@@ -20,29 +20,30 @@ function activate(context) {
     );
   }
 
+  function searchBackward(regex) {
+    var lineNum = editor.selection.active.line;
+    while (lineNum >= 0) {
+      const curLine = document.lineAt(lineNum).text;
+      if (curLine.match(regex)) {
+        return curLine.match(regex)[1];
+      }
+      lineNum--;
+    }
+
+    // FIXME: should probably do something better than this
+    throw new Error("Didnt find search regex");
+  }
+
+  function testPathAtCursor() {
+    const moduleName = moduleNameOfCurrentFile();
+    const className = searchBackward(/^\s*class (\w+)/);
+    const funcName = searchBackward(/^\s*def (test_\w+)/);
+    return `${moduleName}.${className}.${funcName}`;
+  }
+
   let disposable = vscode.commands.registerCommand(
     "extension.testUnderCursor",
     function() {
-      function searchBackward(regex) {
-        var lineNum = editor.selection.active.line;
-        while (lineNum >= 0) {
-          const curLine = document.lineAt(lineNum).text;
-          if (curLine.match(regex)) {
-            return curLine.match(regex)[1];
-          }
-          lineNum--;
-        }
-
-        // FIXME: should probably do something better than this
-        throw new Error("Didnt find search regex");
-      }
-
-      function testPathAtCursor() {
-        const moduleName = moduleNameOfCurrentFile();
-        const className = searchBackward(/^\s*class (\w+)/);
-        const funcName = searchBackward(/^\s*def (test_\w+)/);
-        return `${moduleName}.${className}.${funcName}`;
-      }
       mungeTestPathIntoConfig(testPathAtCursor());
       term.sendText("python3 ./run.py");
     }
