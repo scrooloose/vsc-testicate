@@ -1,15 +1,63 @@
 const assert = require('assert');
-
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
 const vscode = require('vscode');
-// const myExtension = require('../extension');
+const path = require('path');
+const fs = require('fs');
+const { Testicate } = require('../../extension.js');
+const { InMemoryDocument } = require('../lib/in_memory_document.js');
+const { execSync } = require('child_process');
 
-suite('Extension Test Suite', () => {
-	vscode.window.showInformationMessage('Start all tests.');
+function buildInMemDoc(fname) {
+  const configPath = path.resolve(__dirname, fname);
+  const uri = vscode.Uri.file(configPath);
+  const content = fs.readFileSync(uri.fsPath, 'utf-8');
 
-	test('Sample test', () => {
-		assert.equal(-1, [1, 2, 3].indexOf(5));
-		assert.equal(-1, [1, 2, 3].indexOf(0));
-	});
+  return new InMemoryDocument(uri, content)
+}
+
+const extRoot = path.resolve(__dirname, '../../');
+
+const vscode_mock = {
+  'window': {
+    'activeTerminal': {
+      'sendText': (command) => {
+        // FIXME: this is shit.
+        // Run the sed, but not the python3.
+        if (!command.includes('python3')) {
+          execSync(command)
+        }
+      }
+    },
+    'activeTextEditor': {
+      'document': buildInMemDoc('../fixtures/test_file.py'),
+      'selection': {
+        'active': {
+          'line': 9
+        }
+      }
+    },
+  },
+  'workspace': {
+    'rootPath': extRoot
+  }
+}
+
+describe('Testicate', function() {
+  describe('runTestUnderCursor', function() {
+    it('updates the test config', function() {
+      const testConfPath = '/tmp/testicate_test_config.py'
+      fs.copyFileSync(`${extRoot}/test/fixtures/test_config.py`, testConfPath);
+
+      new Testicate({
+        'vscode': vscode_mock,
+        'testConfPath': testConfPath
+      }).runTestUnderCursor()
+
+      const newConf = fs.readFileSync(testConfPath, 'utf-8')
+      assert(
+        newConf.includes(
+          "'test_subset': 'test.fixtures.test_file.TestSomething.test_some_stuff'"
+        )
+      )
+    })
+  })
 });

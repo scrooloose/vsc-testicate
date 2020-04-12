@@ -1,6 +1,11 @@
 const vscode = require("vscode");
 
 class Testicate {
+  constructor(options = {}) {
+    this.vscode = options.vscode || vscode;
+    this.testConfPath = options.testConfPath || 'configs/test_config.py';
+  }
+
   runTestUnderCursor() {
     this.mungeTestPathIntoConfig(this.testPathAtCursor());
     this.term.sendText("python3 ./run.py");
@@ -14,7 +19,7 @@ class Testicate {
   // everything below here should be considered private
 
   get editor() {
-    return vscode.window.activeTextEditor;
+    return this.vscode.window.activeTextEditor;
   }
 
   get document() {
@@ -22,7 +27,7 @@ class Testicate {
   }
 
   get term() {
-    return vscode.window.activeTerminal
+    return this.vscode.window.activeTerminal
   }
 
   testPathAtCursor() {
@@ -34,13 +39,13 @@ class Testicate {
 
   moduleNameOfCurrentFile() {
     const fname = this.document.fileName;
-    const relativeFname = fname.replace(vscode.workspace.rootPath + "/", "");
+    const relativeFname = fname.replace(this.vscode.workspace.rootPath + "/", "");
     return relativeFname.replace(/\//g, ".").replace(/\.py$/, "");
   }
 
   mungeTestPathIntoConfig(testPath) {
     this.term.sendText(
-      `sed -i -e "s/^\\( \\+'test_subset': \\)'.*'/\\1'${testPath}'/" configs/test_config.py`
+      `sed -i -e "s/^\\( \\+'test_subset': \\)'.*'/\\1'${testPath}'/" ${this.testConfPath}`
     );
   }
 
@@ -86,5 +91,6 @@ function deactivate() {}
 
 module.exports = {
   activate,
-  deactivate
+  deactivate,
+  Testicate
 };
