@@ -17,10 +17,12 @@ function buildInMemDoc(fname) {
 const extRoot = path.resolve(__dirname, '../../');
 
 function build_vscode_mock() {
-  return {
+  result = {
     'window': {
       'activeTerminal': {
         'sendText': function(command) {
+          this.sendTextInvocations.push(command);
+
           // FIXME: this is shit.
           // Run the sed, but not the python3.
           if (!command.includes('python3')) {
@@ -39,22 +41,27 @@ function build_vscode_mock() {
     },
     'workspace': {
       'rootPath': extRoot
-    }
+    },
+    'sendTextInvocations': []
   }
+  result.window.activeTerminal.sendText = result.window.activeTerminal.sendText.bind(result);
+  return result;
 }
 
+
 describe('Testicate', function() {
+  const testConfPath = '/tmp/testicate_test_config.py'
+
   describe('runTestUnderCursor', function() {
+    fs.copyFileSync(`${extRoot}/test/fixtures/test_config.py`, testConfPath);
+    vscode_mock = build_vscode_mock();
+
+    new Testicate({
+      'vscode': vscode_mock,
+      'testConfPath': testConfPath
+    }).runTestUnderCursor()
+
     it('updates the test config', function() {
-      const testConfPath = '/tmp/testicate_test_config.py'
-      fs.copyFileSync(`${extRoot}/test/fixtures/test_config.py`, testConfPath);
-      vscode_mock = build_vscode_mock();
-
-      new Testicate({
-        'vscode': vscode_mock,
-        'testConfPath': testConfPath
-      }).runTestUnderCursor()
-
       const newConf = fs.readFileSync(testConfPath, 'utf-8')
       assert(
         newConf.includes(
@@ -62,23 +69,38 @@ describe('Testicate', function() {
         )
       )
     })
+
+    it('invokes python run.py', function() {
+      assert(
+        vscode_mock.sendTextInvocations.find(
+          elem => elem.includes('python3 ./run.py')
+        )
+      )
+    })
   })
 
   describe('runAllTestsInCurrentModule', function() {
+    fs.copyFileSync(`${extRoot}/test/fixtures/test_config.py`, testConfPath);
+    vscode_mock = build_vscode_mock();
+
+    new Testicate({
+      'vscode': vscode_mock,
+      'testConfPath': testConfPath
+    }).runAllTestsInCurrentModule()
+
     it('updates the test config', function() {
-      const testConfPath = '/tmp/testicate_test_config.py'
-      fs.copyFileSync(`${extRoot}/test/fixtures/test_config.py`, testConfPath);
-      vscode_mock = build_vscode_mock();
-
-      new Testicate({
-        'vscode': vscode_mock,
-        'testConfPath': testConfPath
-      }).runAllTestsInCurrentModule()
-
       const newConf = fs.readFileSync(testConfPath, 'utf-8')
       assert(
         newConf.includes(
           "'test_subset': 'test.fixtures.test_file'"
+        )
+      )
+    })
+
+    it('invokes python run.py', function() {
+      assert(
+        vscode_mock.sendTextInvocations.find(
+          elem => elem.includes('python3 ./run.py')
         )
       )
     })
