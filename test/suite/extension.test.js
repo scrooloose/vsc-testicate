@@ -1,6 +1,7 @@
 const assert = require('assert');
 const vscode = require('vscode');
 const path = require('path');
+const tempy = require('tempy');
 const fs = require('fs');
 const { Testicate } = require('../../extension.js');
 const { InMemoryDocument } = require('../lib/in_memory_document.js');
@@ -50,16 +51,15 @@ function build_vscode_mock() {
 
 
 describe('Testicate', function() {
-  const testConfPath = '/tmp/testicate_test_config.py'
-
   describe('runTestUnderCursor', function() {
+    const testConfPath = tempy.file({extension: 'py'});
     fs.copyFileSync(`${extRoot}/test/fixtures/test_config.py`, testConfPath);
-    vscode_mock = build_vscode_mock();
+    const vscode_mock = build_vscode_mock();
 
     new Testicate({
       'vscode': vscode_mock,
       'testConfPath': testConfPath
-    }).runTestUnderCursor()
+    }).runTestUnderCursor();
 
     it('updates the test config', function() {
       const newConf = fs.readFileSync(testConfPath, 'utf-8')
@@ -80,8 +80,9 @@ describe('Testicate', function() {
   })
 
   describe('runAllTestsInCurrentModule', function() {
+    const testConfPath = tempy.file({extension: 'py'});
     fs.copyFileSync(`${extRoot}/test/fixtures/test_config.py`, testConfPath);
-    vscode_mock = build_vscode_mock();
+    const vscode_mock = build_vscode_mock();
 
     new Testicate({
       'vscode': vscode_mock,
