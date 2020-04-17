@@ -3,7 +3,7 @@
   "displayName": "Testicate",
   "description": "Run test under cursor",
   "publisher": "drfoobario",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/scrooloose/vsc-testicate"
